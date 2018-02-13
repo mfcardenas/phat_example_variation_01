@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: net.sf.phat:phat-device-server:1.0.12-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/phat/phat-device-server/1.0.12-SNAPSHOT/phat-device-server-1.0.12-20171231.153637-7.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/phat/phat-device-server/1.0.12-SNAPSHOT/phat-device-server-1.0.12-20171231.153637-7-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/phat/phat-device-server/1.0.12-SNAPSHOT/phat-device-server-1.0.12-20171231.153637-7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
