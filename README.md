@@ -1,7 +1,14 @@
 # PHAT Example Variation Activity [01]
-Patient performs basic activities while suffering tremors in hands and neck.
- 
-While performing the activities this is monitored with acceleration sensors in both hands.
+The patient performs basic activities within his home.
+The activities are defined within the configuration file where it is possible to indicate several aspects of the character's behavior:
+
+- Home
+- Avatar
+- Sensors
+- Sensors type
+
+
+When performing activities, this is monitored with acceleration sensors in both hands.
 <table>
 <tr>
     <td>  
