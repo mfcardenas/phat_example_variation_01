@@ -1,0 +1,114 @@
+{
+  "name": "TestBodiesAppStateMC",
+  "worlstation": "2016",
+  "debug": false,
+  "nameHouse": "House1",
+  "typeHouse": "house3room2bath",
+  "bodies": [
+    {
+      "name": "Patient1",
+      "type": "Elder",
+      "position": "Sink"
+    }
+  ],
+  "commands_": [
+  	{
+  		"id": "00_opeObject",
+  		"name" :"OpenObjectCommand",
+  		"typeClass": "OpenObjectCommand",
+  		"packageClass":"phat.body.commands",
+  		"bodyId": "Patient1",
+      	"objectId": "Fridge1"
+  	},
+  	{
+  		"id": "00_GoCloseToObjectCommand",
+  		"name": "GoCloseToObjectCommand",
+  		"typeClass": "GoCloseToObjectCommand",
+  		"packageClass":"phat.body.commands",
+  		"bodyId": "Patient1",
+      	"targetObjectId": "Fridge1"
+  	},
+    {
+      "id": "01_movArmCommand",
+      "name": "MovArmCommand",
+      "typeClass":"MovArmCommand",
+      "packageClass":"phat.body.commands",
+      "angular": "3.14159265",
+      "minAngle": "-1.51707964",
+      "maxAngle": "0",
+      "bodyId":"Patient1",
+      "side": "L",
+      "axis": "2",
+      "on": false
+    },
+    {
+      "id": "02_movArmCommand",
+      "name": "MovArmCommand",
+      "typeClass":"MovArmCommand",
+      "packageClass":"phat.body.commands",
+      "angular": "3.14159265",
+      "minAngle": "-1.51707964",
+      "maxAngle": "0",
+      "bodyId":"Patient1",
+      "side": "L",
+      "axis": "2",
+      "on": true
+    },
+    {
+      "id": "03_alignWithCommand",
+      "name": "AlignWithCommand",
+      "typeClass":"AlignWithCommand",
+      "packageClass":"phat.body.commands",
+      "bodyId": "Patient1",
+      "entityId": "Fridge1",
+      "active": true
+    },
+    {
+      "id": "04_closeObjectCommand",
+      "name": "CloseObjectCommand",
+      "typeClass":"CloseObjectCommand",
+      "packageClass":"phat.body.commands",
+      "bodyId": "Patient1",
+      "objectId": "Fridge1",
+      "active": true
+    }
+  ],
+  "scriptCommands_": [
+    {
+      "id": "00_opeObject",
+      "stateExecute": "success",
+      "active": true 
+    },
+    {
+      "id": "00_GoCloseToObjectCommand",
+      "listener": true,
+      "active": true
+    },
+    {
+      "id": "03_alignWithCommand",
+      "stateControl": "success",
+      "active": true
+    },
+    {
+      "id": "04_closeObjectCommand",
+      "stateControl": "success",
+      "active": true
+    }
+  ],
+  "controls_": [
+    {
+      "name": "control1",
+      "type": "HandTremblingControl",
+      "params": [
+        "RIGHT_HAND"
+      ]
+    },
+    {
+      "name": "control2",
+      "type": "HandTremblingControl",
+      "params": [
+        "LEFT_HAND"
+      ]
+    }
+  ]
+}
