@@ -33,15 +33,12 @@ import phat.app.PHATInitAppListener;
 import phat.beans.Body;
 import phat.beans.PhatSimulationBean;
 import phat.body.BodiesAppState;
-import phat.body.commands.AlignWithCommand;
-import phat.body.commands.CloseObjectCommand;
-import phat.body.commands.GoCloseToObjectCommand;
-import phat.body.commands.OpenObjectCommand;
+import phat.body.commands.*;
 import phat.commands.MovArmCommand;
 import phat.commands.PHATCommand;
 import phat.commands.PHATCommandListener;
 import phat.devices.DevicesAppState;
-import phat.devices.commands.CreateSmartphoneCommand;
+import phat.devices.commands.CreateAccelerometerSensorCommand;
 import phat.devices.commands.SetDeviceOnFurnitureCommand;
 import phat.devices.commands.SetDeviceOnPartOfBodyCommand;
 import phat.environment.SpatialEnvironmentAPI;
@@ -53,21 +50,19 @@ import phat.sensors.accelerometer.XYAccelerationsChart;
 import phat.sensors.accelerometer.XYShiftingAccelerationsChart;
 import phat.server.PHATServerManager;
 import phat.server.ServerAppState;
+import phat.server.commands.ActivateAccelerometerServerCommand;
 import phat.structures.houses.commands.CreateHouseCommand;
 import phat.utils.ReadJSON;
 import phat.utils.Utils;
 import phat.world.WorldAppState;
 import sim.android.hardware.service.SimSensorEvent;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -76,29 +71,26 @@ import java.util.logging.Logger;
  * @author UCM
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ActvityVariationDemo implements PHATInitAppListener{
+public class ActivityVariationDemo implements PHATInitAppListener{
 
-    private static final Logger logger = Logger.getLogger(ActvityVariationDemo.class.getName());
+    private static final Logger logger = Logger.getLogger(ActivityVariationDemo.class.getName());
     
     /**
      * Phat Simulation Object.
      */
-    PhatSimulationBean phatSimulation;
+    private PhatSimulationBean phatSimulation;
     
     /**
      * Bodies App State.
      */
-    BodiesAppState bodiesAppState;
-    DevicesAppState devicesAppState;
-    WorldAppState worldAppState;
-    ServerAppState serverAppState;
+    private BodiesAppState bodiesAppState;
+    private DevicesAppState devicesAppState;
+    private WorldAppState worldAppState;
+    private ServerAppState serverAppState;
     
     public void init(SimpleApplication app) {
     	
     	String fileConfig = "config_simulation_v3.json";
-    	
-    	ScriptEngineManager manager = new ScriptEngineManager();
-    	ScriptEngine engine = manager.getEngineByName("Renjin");
 
     	AppStateManager stateManager = app.getStateManager();
         app.getFlyByCamera().setMoveSpeed(10f);
@@ -108,8 +100,8 @@ public class ActvityVariationDemo implements PHATInitAppListener{
         
         SpatialEnvironmentAPI seAPI = SpatialEnvironmentAPI.createSpatialEnvironmentAPI(app);
         seAPI.getWorldAppState().setCalendar(2016, 2 ,18, 12, 30, 0);
-                
-        setPhatSimulation(ReadJSON.initPhatSimConfig(fileConfig));
+
+        this.phatSimulation = ReadJSON.initPhatSimConfig(fileConfig);
         
         bulletAppState.setDebugEnabled(phatSimulation.isDebug());
         seAPI.getHouseAppState().runCommand(new CreateHouseCommand(phatSimulation.getNameHouse(), Utils.getTypeHouse(phatSimulation.getTypeHouse())) );
@@ -120,21 +112,31 @@ public class ActvityVariationDemo implements PHATInitAppListener{
         //Se crean los personajes y se posicionan en el espacio
         for(Body body: phatSimulation.getBodies()){
             bodiesAppState.createBody(Utils.getTypeBody(body.getType()), body.getName());
+            bodiesAppState.runCommand(new BodyLabelCommand(body.getName(), true));
             bodiesAppState.setInSpace(body.getName(), phatSimulation.getNameHouse(), body.getPosition());
         }
-        
+
         devicesAppState = new DevicesAppState();
         stateManager.attach(devicesAppState);
-        
-        devicesAppState.runCommand(new CreateSmartphoneCommand("SmartWatch1").setDimensions(0.03f, 0.03f, 0.01f));
-        devicesAppState.runCommand(new SetDeviceOnPartOfBodyCommand("Patient1", "SmartWatch1", 
-                SetDeviceOnPartOfBodyCommand.PartOfBody.Chest));
-        
-        devicesAppState.runCommand(new CreateSmartphoneCommand("SmartWatch2").setDimensions(0.03f, 0.03f, 0.01f));
-        devicesAppState.runCommand(new SetDeviceOnPartOfBodyCommand("Patient1", "SmartWatch2", 
+
+        devicesAppState = new DevicesAppState();
+        stateManager.attach(devicesAppState);
+
+        devicesAppState.runCommand(new CreateAccelerometerSensorCommand("Sensor1"));
+        devicesAppState.runCommand(new SetDeviceOnPartOfBodyCommand("Patient1", "Sensor1",
                 SetDeviceOnPartOfBodyCommand.PartOfBody.RightHand));
-        
-        devicesAppState.runCommand(new SetDeviceOnFurnitureCommand("deviceId", "House1", "furnitureId"));
+
+        devicesAppState.runCommand(new CreateAccelerometerSensorCommand("Sensor2"));
+        devicesAppState.runCommand(new SetDeviceOnPartOfBodyCommand("Patient1", "Sensor2",
+                SetDeviceOnPartOfBodyCommand.PartOfBody.LeftHand));
+
+        serverAppState = new ServerAppState();
+        stateManager.attach(serverAppState);
+
+        serverAppState.runCommand(new ActivateAccelerometerServerCommand("accel", "Sensor1"));
+        serverAppState.runCommand(new ActivateAccelerometerServerCommand("accel", "Sensor2"));
+
+//        devicesAppState.runCommand(new SetDeviceOnFurnitureCommand("deviceId", "House1", "furnitureId"));
 
         try {
             Thread.sleep(1000);
@@ -144,52 +146,52 @@ public class ActvityVariationDemo implements PHATInitAppListener{
         }
 
         new Thread() { public void run() {
-            launchRemoteXYChart(PHATServerManager.getAddress(),"Remote Chest Sensor"
-                    ,"SmartWatch1");
-            launchRemoteXYChart(PHATServerManager.getAddress(),"Remote Right Hand"
-                    ,"SmartWatch2");
+            launchRemoteXYChart(PHATServerManager.getAddress(),"Remote Sensor Right Hand"
+                    ,"Sensor1");
+            launchRemoteXYChart(PHATServerManager.getAddress(),"Remote Sensor Left Hand"
+                    ,"Sensor2");
 
         } }.start();
         
-        stateManager.attach(new AbstractAppState() {
-
-        	@Override
-            public void initialize(AppStateManager asm, Application aplctn) {}
-            
-            boolean init = false;
-
-            @Override
-            public void update(float f) {
-            	if(!init){
-            		AccelerometerControl ac = devicesAppState.getDevice("SmartWatch1").getControl(AccelerometerControl.class);
-                    ac.setMode(AccelerometerControl.AMode.ACCELEROMETER_MODE);
-                    XYAccelerationsChart chart = new XYAccelerationsChart("Chart - Accelometer Mode, Chest", "Smartphone 1 Mov", "m/s2", "x,y,z");
-                    ac.add(chart);
-                    chart.showWindow();
-                    init = true;	
-            	}
-            }
-        });
+//        stateManager.attach(new AbstractAppState() {
+//
+//        	@Override
+//            public void initialize(AppStateManager asm, Application aplctn) {}
+//
+//            boolean init = false;
+//
+//            @Override
+//            public void update(float f) {
+//            	if(!init){
+//            		AccelerometerControl ac = devicesAppState.getDevice("SmartWatch1").getControl(AccelerometerControl.class);
+//                    ac.setMode(AccelerometerControl.AMode.ACCELEROMETER_MODE);
+//                    XYAccelerationsChart chart = new XYAccelerationsChart("Chart - Accelometer Mode, Chest", "Smartphone 1 Mov", "m/s2", "x,y,z");
+//                    ac.add(chart);
+//                    chart.showWindow();
+//                    init = true;
+//            	}
+//            }
+//        });
         
-        stateManager.attach(new AbstractAppState() {
-
-        	@Override
-            public void initialize(AppStateManager asm, Application aplctn) {}
-            
-            boolean init = false;
-
-            @Override
-            public void update(float f) {
-            	if(!init){
-            		AccelerometerControl ac = devicesAppState.getDevice("SmartWatch2").getControl(AccelerometerControl.class);
-                    ac.setMode(AccelerometerControl.AMode.GRAVITY_MODE);
-                    XYAccelerationsChart chart = new XYAccelerationsChart("Chart - Gravity Mode, Right Hand", "Smartphone 2 Mov", "m/s2", "x,y,z");
-                    ac.add(chart);
-                    chart.showWindow();
-                    init = true;	
-            	}
-            }
-        });
+//        stateManager.attach(new AbstractAppState() {
+//
+//        	@Override
+//            public void initialize(AppStateManager asm, Application aplctn) {}
+//
+//            boolean init = false;
+//
+//            @Override
+//            public void update(float f) {
+//            	if(!init){
+//            		AccelerometerControl ac = devicesAppState.getDevice("SmartWatch2").getControl(AccelerometerControl.class);
+//                    ac.setMode(AccelerometerControl.AMode.GRAVITY_MODE);
+//                    XYAccelerationsChart chart = new XYAccelerationsChart("Chart - Gravity Mode, Right Hand", "Smartphone 2 Mov", "m/s2", "x,y,z");
+//                    ac.add(chart);
+//                    chart.showWindow();
+//                    init = true;
+//            	}
+//            }
+//        });
 
         /*phatSimulation.setCommands(ReadJSON.initPhatSimCommands(url));
         if(phatSimulation.getCommands() != null && phatSimulation.getCommands().size() > 0){
@@ -202,6 +204,15 @@ public class ActvityVariationDemo implements PHATInitAppListener{
         goCloseObjectSane("Patient1", new String[]{"Fridge1"}, false);
         app.getCamera().setLocation(new Vector3f(7f, 7.25f, 6.1f));
         app.getCamera().setRotation(new Quaternion(0.37133554f, -0.6016627f, 0.37115145f, 0.60196227f));
+    }
+
+    public static InetAddress getAddress() {
+        try {
+            return InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
+        } catch (Exception var1) {
+            System.err.println("Error");
+            return null;
+        }
     }
 
     /**
@@ -227,7 +238,7 @@ public class ActvityVariationDemo implements PHATInitAppListener{
                 }
                 
                 if(command.getState().equals(PHATCommand.State.Running)){
-                	
+                	logger.info("Running state command... ");
                 }
             }
         });
@@ -256,8 +267,8 @@ public class ActvityVariationDemo implements PHATInitAppListener{
     
     /**
      * Open Door Actions.
-     * @param source
-     * @param target 
+     * @param source source.
+     * @param target target.
      */
     private void openObject(final String source, final String target) {
         OpenObjectCommand gtc = new OpenObjectCommand(source, target);
@@ -266,41 +277,25 @@ public class ActvityVariationDemo implements PHATInitAppListener{
     
     /**
      * Main Class, executios Test.
-     * @param args 
+     * @param args args.
      */
     public static void main(String[] args) {
-        ActvityVariationDemo app = new ActvityVariationDemo();
+        ActivityVariationDemo app = new ActivityVariationDemo();
         PHATApplication phat = new PHATApplication(app);
-        
         phat.setDisplayFps(false);
         phat.setDisplayStatView(false);
         phat.setShowSettings(false);
-        
         phat.start();
     }
 
-	/**
-	 * @return the phatSimulation
-	 */
-	public PhatSimulationBean getPhatSimulation() {
-		return phatSimulation;
-	}
-
-	/**
-	 * @param phatSimulation the phatSimulation to set
-	 */
-	public void setPhatSimulation(PhatSimulationBean phatSimulation) {
-		this.phatSimulation = phatSimulation;
-	}
-
-    public static void launchRemoteXYChart(final InetAddress host, final String title, final String sensor) {
+    private static void launchRemoteXYChart(final InetAddress host, final String title, final String sensor) {
+	    logger.info("Create service in --> " + host);
         Service taccelService = ServiceManagerServer.getInstance().getServiceManager().getService("accel", sensor);
         while (taccelService == null) {
             // not ready
             try {
                 Thread.currentThread().sleep(1000);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             taccelService = ServiceManagerServer.getInstance().getServiceManager().getService("accel", sensor);
@@ -315,6 +310,7 @@ public class ActvityVariationDemo implements PHATInitAppListener{
                     chart.showWindow();
                     for (int k = 0; k < 5 && s == null; k++)
                         try {
+                        logger.info("Establishing connection in --> " + host + " port: --> " + accelService.getPort());
                             s = new Socket(host, accelService.getPort());
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -347,14 +343,9 @@ public class ActvityVariationDemo implements PHATInitAppListener{
                                     }
                                 });
                             }
-                        }
-                        ;
+                        };
                     } while (objRead != null);
-                } catch (UnknownHostException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
